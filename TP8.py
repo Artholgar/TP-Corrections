@@ -3,26 +3,31 @@ from os import listdir
 
 if __name__ == "__main__":
 
+    #On stoque la liste des noms des programmes dans lst_eleves
     lst_eleves = listdir('./Rendus_eleves/eleves_bis')
 
+    #Fichier dans lequelle on va écrire les notes
+    fich = open("resultats.csv", "w")
+
     for eleve in lst_eleves:
-        erreur = 0
+        compilation = 0
         warning = 0
         tests = 0
         qualite = 0
 
-        print(eleve)
+        #On test si le programme compile
         compil = Popen(["gcc", "-ansi", "-Wall", "-o", eleve[:-2], "./Rendus_eleves/eleves_bis/" + eleve], stdout = PIPE, stderr = PIPE, encoding = "utf8")
         compil.wait()
-        if compil.returncode != 0:
-            erreur = 1
+
+        #On compte le nombre de warnings
+        if compil.returncode == 0:
+            compilation = 1
         for ligne in compil.stderr:
             if 'warning' in ligne:
                 warning += 1
 
-        print("erreur :", erreur, "\nwarning :", warning)
-
-        if erreur == 0:
+        #Si le programme compile, on test les resultats
+        if compilation == 1:
             out = Popen(["./" + eleve[:-2], "0", "0"], stdout = PIPE, encoding = "utf8")
             out.wait()
 
@@ -78,8 +83,7 @@ if __name__ == "__main__":
                 if(sortie == "La somme de -1 et -52 vaut -53\n"):
                     tests += 1
 
-        print("tests : ", tests)
-
+        #On compte le nombre de commentaires
         quali = Popen(["cat", "./Rendus_eleves/eleves_bis/" + eleve], stdout = PIPE, encoding = "utf8")
         quali.wait()
 
@@ -94,8 +98,12 @@ if __name__ == "__main__":
             if tmp != 0:
                 tmp += 1
 
-        print("qualite : " + str(qualite)) 
+         #On ecris les resultats dan le fichier csv
+        ligne = str(eleve[:-2]) + "," + str(compilation) + "," + str(warning) + "," + str(tests) + "," + str(qualite)
 
-        print('\n')
-        if(erreur == 0):
+        fich.write(ligne + '\n')
+
+        #On supprime l'executable
+        if(compilation == 1):
             call(["rm", eleve[:-2]])
+    fich.close()
